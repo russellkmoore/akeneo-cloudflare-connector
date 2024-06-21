@@ -1,9 +1,6 @@
 import { Category } from "./model/Category.js";
 import { Product } from "./model/Product.js";
 import { Akeneo } from "./model/Akeneo.js";
-/**
- * @typedef {Object} Env
- */
 
 export async function handleRefresh(env) {
 	const akeneo = new Akeneo(
@@ -14,17 +11,18 @@ export async function handleRefresh(env) {
 		env.AKENEO_SECRET
 	);
 
-	var newCategoryCount = 0;
-	var oldCategoryCount = await countKeysInKV(env.CATEGORY_CACHE);
-	var endCategoryCount = 0;
-	var newProductCount = 0;
-	var oldProductCount = await countKeysInKV(env.PRODUCT_CACHE);
-	var endProductCount = 0;
+	let newCategoryCount = 0;
+	const oldCategoryCount = await countKeysInKV(env.CATEGORY_CACHE);
+	let endCategoryCount = 0;
+	let newProductCount = 0;
+	const oldProductCount = await countKeysInKV(env.PRODUCT_CACHE);
+	let endProductCount = 0;
 
 	// Fetch all categories from Akeneo
 	console.log('Fetching all categories...');
 	const allCategories = await fetchAllCategories(akeneo);
 	console.log('Fetching all categories... done.');
+
 	// Map the categories to the Category class
 	const categoryObjects = allCategories.map(cat => new Category(cat.code, cat.parent, cat.labels, [], [], []));
 	newCategoryCount = categoryObjects.length;
@@ -33,7 +31,7 @@ export async function handleRefresh(env) {
 	// Fetch all products from Akeneo
 	console.log('Fetching all products...');
 	const allProducts = await fetchAllProducts(akeneo);
-	console.log('Fetching all products... done.' );
+	console.log('Fetching all products... done.');
 
 	// Map the products to the Product class
 	const productObjects = allProducts.map(prod => new Product(prod.identifier, prod.family, prod.categories, prod.values));
@@ -46,27 +44,27 @@ export async function handleRefresh(env) {
 	console.log('Updating Categories with Product IDs... done');
 
 	// Build the navigational tree
-	console.log('Buildig Categories Tree...');
+	console.log('Building Categories Tree...');
 	const categoryTree = buildCategoryTree(categoryObjects);
-	console.log('Buildig Categories Tree... done');
+	console.log('Building Categories Tree... done');
 
 	// Save the category tree in Cloudflare CATALOG_NAVIGATION_CACHE KV.
 	console.log('Saving Category Tree...');
 	await env.CATALOG_NAVIGATION_CACHE.put('catalog', JSON.stringify(categoryTree));
 	console.log('Saving Category Tree... done.');
 
-	//Save the categories in Cloudflare CATEGORY_CACHE KV.
-	console.log('Saving Categories ...');
-	await saveCategoriesToCache(categoryObjects);
-	console.log('Saving Categories ... done.');
-
 	// Save the products in Cloudflare PRODUCT_CACHE KV.
 	console.log('Saving Products ...');
-	await saveProductsToCache(productObjects);
+	await saveProductsToCache(env, productObjects);
 	console.log('Saving Products ... done');
 
-	endCategoryCount = await this.countKeysInKV(env.CATEGORY_CACHE);
-	endProductCount = await this.countKeysInKV(env.PRODUCT_CACHE)
+	// Save the categories in Cloudflare CATEGORY_CACHE KV.
+	console.log('Saving Categories ...');
+	await saveCategoriesToCache(env, categoryObjects);
+	console.log('Saving Categories ... done.');
+
+	endCategoryCount = await countKeysInKV(env.CATEGORY_CACHE);
+	endProductCount = await countKeysInKV(env.PRODUCT_CACHE);
 	console.log('Final Category Count is ' + endCategoryCount + ' and final product count is ' + endProductCount);
 
 	return new Response(JSON.stringify({
@@ -138,7 +136,6 @@ export async function handleRefresh(env) {
 		return allProducts;
 	}
 
-
 	// Function to build a navigational tree based on the "parent" property
 	function buildCategoryTree(categories) {
 		const categoryMap = {};
@@ -177,18 +174,63 @@ export async function handleRefresh(env) {
 		});
 	}
 
-	// Function to save products to PRODUCT_CACHE KV
-	async function saveProductsToCache(products) {
-		for (const product of products) {
-			await env.PRODUCT_CACHE.put(product.identifier, JSON.stringify(product));
-		}
-	}
-
 	// Function to save categories to CATEGORY_CACHE KV
-	async function saveCategoriesToCache(categories) {
-		for (const category of categories) {
-			await env.CATEGORY_CACHE.put(category.code, JSON.stringify(category));
+	async function saveCategoriesToCache(env, categories) {
+		console.log('saving ' + categories.length + ' categories...');
+		//create the bulk KV upload object
+		const bulkCategories = categories.map(cat => ({
+			key: cat.code,
+			value: JSON.stringify(new Category(cat.code, cat.parent, cat.labels, cat.categories, cat.values, cat.childProductIds))
+		}));
+		const url = `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNTID}/storage/kv/namespaces/${env.CF_CATEGORYKVID}/bulk`;
+
+		const response = await fetch(url, {
+			method: 'PUT',
+			headers: {
+				'Authorization': `Bearer ${env.CF_APITOKEN}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(bulkCategories)
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Failed to save categories:', errorData);
+			throw new Error(`Failed to save categories: ${errorData.errors.map(e => e.message).join(', ')}`);
 		}
+
+		const data = await response.json();
+		console.log('All categories saved successfully');
+		return data;
 	}
 
-};
+	// Function to save products to PRODUCT_CACHE KV
+	async function saveProductsToCache(env, products) {
+		console.log('saving ' + products.length + ' products...');
+		//create the bulk KV upload object
+		const bulkProducts = products.map(prod => ({
+			key: prod.identifier,
+			value: JSON.stringify(new Product(prod.identifier, prod.family, prod.categories, prod.values))
+		}));
+		const url = `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNTID}/storage/kv/namespaces/${env.CF_PRODUCTKVID}/bulk`;
+
+		const response = await fetch(url, {
+			method: 'PUT',
+			headers: {
+				'Authorization': `Bearer ${env.CF_APITOKEN}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(bulkProducts)
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Failed to save products:', errorData);
+			throw new Error(`Failed to save products: ${errorData.errors.map(e => e.message).join(', ')}`);
+		}
+
+		const data = await response.json();
+		console.log('All products saved successfully');
+		return data;
+	}
+}

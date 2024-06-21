@@ -16,9 +16,3 @@ binding = "CATEGORY_CACHE"
 id = "129e33beab4447ab82531f36959648ce"
 binding = "PRODUCT_CACHE"
 
-[vars]
-AKENEO_CLIENT_ID = "5_4783t5p173qc80c4w4cgwggos0ws0kogkkgw04cs8080os4kw4"
-AKENEO_HOST = "russellkmoore.ngrok.io"
-AKENEO_PASSWORD = "6070e675f"
-AKENEO_SECRET = "1yzu9axvynz4ksskw8ckk0csokscg0o4cs4kco4w0o4o0k0g04"
-AKENEO_USERNAME = "cloudflare_1314"
