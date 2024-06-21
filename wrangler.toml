@@ -6,19 +6,19 @@ compatibility_flags = [ "nodejs_compat" ]
 
 [[kv_namespaces]]
 id = "20a731711d864a9687fcdf5eb98fa484"
-binding = "akeneo_catalog"
+binding = "CATALOG_NAVIGATION_CACHE"
 
 [[kv_namespaces]]
 id = "50319789a6f0498285717599ff96a8c7"
-binding = "akeneo_categories"
+binding = "CATEGORY_CACHE"
 
 [[kv_namespaces]]
 id = "129e33beab4447ab82531f36959648ce"
-binding = "akeneo_products"
+binding = "PRODUCT_CACHE"
 
 [vars]
-AKENEO_CLIENT_ID = "5_u9kio095vgg0wsg0g4gk8k0wk0cc4ow8occ8wwwkgkcosw0g8"
-AKENEO_HOST = "51711784b681.ngrok.app"
-AKENEO_PASSWORD = "6f5e706c5"
-AKENEO_SECRET = "4aimwe4vqnmskg40ok0wgwg00skgg4ggoc04gcw8kwgwgg48s4"
-AKENEO_USERNAME = "cloudflare_9112"
+AKENEO_CLIENT_ID = "5_4783t5p173qc80c4w4cgwggos0ws0kogkkgw04cs8080os4kw4"
+AKENEO_HOST = "russellkmoore.ngrok.io"
+AKENEO_PASSWORD = "6070e675f"
+AKENEO_SECRET = "1yzu9axvynz4ksskw8ckk0csokscg0o4cs4kco4w0o4o0k0g04"
+AKENEO_USERNAME = "cloudflare_1314"
