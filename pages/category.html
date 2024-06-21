@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Category Details</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+	<h1>Category Details</h1>
+	<div id="category-info"></div>
+	<button onclick="goBack()">Go Back</button>
+
+	<script>
+		function goBack() {
+			window.history.back();
+		}
+
+		async function fetchCategoryData(categoryId) {
+			const response = await fetch(`https://your-worker-url/category/${categoryId}`);
+			if (response.ok) {
+				const categoryData = await response.json();
+				displayCategoryData(categoryData);
+			} else {
+				document.getElementById('category-info').innerText = 'Category not found';
+			}
+		}
+
+		function displayCategoryData(categoryData) {
+			const categoryInfoDiv = document.getElementById('category-info');
+			categoryInfoDiv.innerHTML = `
+		<p><strong>Category ID:</strong> ${categoryData.code}</p>
+		<p><strong>Labels:</strong> ${JSON.stringify(categoryData.labels, null, 2)}</p>
+		<p><strong>Parent:</strong> ${categoryData.parent || 'None'}</p>
+		<p><strong>Child Product IDs:</strong></p>
+		<ul>
+		  ${categoryData.childProductIds.map(productId => `<li><a href="/product.html?product-id=${productId}">${productId}</a></li>`).join('')}
+		</ul>
+	  `;
+		}
+
+		document.addEventListener('DOMContentLoaded', () => {
+			const urlParams = new URLSearchParams(window.location.search);
+			const categoryId = urlParams.get('category-id');
+			if (categoryId) {
+				fetchCategoryData(categoryId);
+			} else {
+				document.getElementById('category-info').innerText = 'No category ID provided';
+			}
+		});
+	</script>
+</body>
+
+</html>

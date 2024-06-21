@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Product Details</h1>
+  <div id="product-info"></div>
+  <button onclick="goBack()">Go Back</button>
+
+  <script>
+	function goBack() {
+	  window.history.back();
+	}
+
+	async function fetchProductData(productId) {
+	  const response = await fetch(`https://your-worker-url/product/${productId}`);
+	  if (response.ok) {
+		const productData = await response.json();
+		displayProductData(productData);
+	  } else {
+		document.getElementById('product-info').innerText = 'Product not found';
+	  }
+	}
+
+	function displayProductData(productData) {
+	  const productInfoDiv = document.getElementById('product-info');
+	  productInfoDiv.innerHTML = `
+		<p><strong>Product ID:</strong> ${productData.identifier}</p>
+		<p><strong>Family:</strong> ${productData.family}</p>
+		<p><strong>Categories:</strong> ${productData.categories.join(', ')}</p>
+		<p><strong>Values:</strong> ${JSON.stringify(productData.values, null, 2)}</p>
+	  `;
+	}
+
+	document.addEventListener('DOMContentLoaded', () => {
+	  const urlParams = new URLSearchParams(window.location.search);
+	  const productId = urlParams.get('product-id');
+	  if (productId) {
+		fetchProductData(productId);
+	  } else {
+		document.getElementById('product-info').innerText = 'No product ID provided';
+	  }
+	});
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product and Category Page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Product and Category Page</h1>
+  
+  <div id="category-menu">
+	<h2>Category Menu</h2>
+	<ul id="menu-list"></ul>
+  </div>
+  
+  <h2>Get Product</h2>
+  <form id="product-form">
+	<label for="product-id">Enter Product ID:</label>
+	<input type="text" id="product-id" name="product-id" required>
+	<button type="submit">Get Product</button>
+  </form>
+
+  <h2>Get Category</h2>
+  <form id="category-form">
+	<label for="category-id">Enter Category ID:</label>
+	<input type="text" id="category-id" name="category-id" required>
+	<button type="submit">Get Category</button>
+  </form>
+
+  <script>
+	document.getElementById('product-form').addEventListener('submit', function(event) {
+	  event.preventDefault();
+	  const productId = document.getElementById('product-id').value;
+	  window.location.href = `/product.html?product-id=${productId}`;
+	});
+
+	document.getElementById('category-form').addEventListener('submit', function(event) {
+	  event.preventDefault();
+	  const categoryId = document.getElementById('category-id').value;
+	  window.location.href = `/category.html?category-id=${categoryId}`;
+	});
+
+	async function fetchCategoryNavigation() {
+	  const response = await fetch('https://your-worker-url'); // Replace with your worker URL
+	  if (response.ok) {
+		const categoryTree = await response.json();
+		displayCategoryMenu(categoryTree);
+	  } else {
+		console.error('Failed to fetch category navigation');
+	  }
+	}
+
+	function displayCategoryMenu(categories, parentElement = document.getElementById('menu-list')) {
+	  categories.forEach(category => {
+		const li = document.createElement('li');
+		const a = document.createElement('a');
+		a.href = `/category.html?category-id=${category.code}`;
+		a.textContent = category.labels.en_US || category.code;
+		li.appendChild(a);
+
+		if (category.categories && category.categories.length > 0) {
+		  const ul = document.createElement('ul');
+		  displayCategoryMenu(category.categories, ul);
+		  li.appendChild(ul);
+		}
+
+		parentElement.appendChild(li);
+	  });
+	}
+
+	document.addEventListener('DOMContentLoaded', fetchCategoryNavigation);
+  </script>
+</body>
+</html>
