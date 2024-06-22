@@ -6,51 +6,172 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Category Details</title>
 	<link rel="stylesheet" href="styles.css">
-</head>
+	<link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+	<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
 
 <body>
-	<h1>Category Details</h1>
-	<div id="category-info"></div>
-	<button onclick="goBack()">Go Back</button>
+	<main class="container">
 
-	<script>
-		function goBack() {
-			window.history.back();
-		}
+		<nav id="nav">
+			<ul id="menu-list">
+				<!-- Menu toggle on smaller screens  -->
+				<li id="toggleMenu">
+					<a href="/index.html">
+						<i class="fa fa-bars"></i>
+						<i class="fa fa-times"></i>
+						<!-- As icons are being used to represent open/close, provide hidden text for screen readers -->
+						<span id="toggleMenu-text">Toggle Navigation</span>
+					</a>
+				</li>
+				<li>
+					<a href="/index.html">
+						&#127968;
+					</a>
+				</li>
+			</ul>
+		</nav>
 
-		async function fetchCategoryData(categoryId) {
-			const response = await fetch(`https://your-worker-url/category/${categoryId}`);
-			if (response.ok) {
-				const categoryData = await response.json();
-				displayCategoryData(categoryData);
-			} else {
-				document.getElementById('category-info').innerText = 'Category not found';
-			}
-		}
+		<h1>Category Details</h1>
 
-		function displayCategoryData(categoryData) {
-			const categoryInfoDiv = document.getElementById('category-info');
-			categoryInfoDiv.innerHTML = `
-		<p><strong>Category ID:</strong> ${categoryData.code}</p>
-		<p><strong>Labels:</strong> ${JSON.stringify(categoryData.labels, null, 2)}</p>
-		<p><strong>Parent:</strong> ${categoryData.parent || 'None'}</p>
-		<p><strong>Child Product IDs:</strong></p>
-		<ul>
-		  ${categoryData.childProductIds.map(productId => `<li><a href="/product.html?product-id=${productId}">${productId}</a></li>`).join('')}
-		</ul>
-	  `;
-		}
+		<div id="category-info"></div>
+		<button id="go-back">Go Back</button>
 
-		document.addEventListener('DOMContentLoaded', () => {
-			const urlParams = new URLSearchParams(window.location.search);
-			const categoryId = urlParams.get('category-id');
-			if (categoryId) {
-				fetchCategoryData(categoryId);
-			} else {
-				document.getElementById('category-info').innerText = 'No category ID provided';
-			}
-		});
-	</script>
+		<script>
+			$(document).ready(function() {
+
+				// Remove no-js class
+				$('html').removeClass('no-js');
+
+				function goBack() {
+					window.history.back();
+				}
+
+				async function fetchCategoryData(categoryId) {
+					try {
+						const response = await fetch(`https://akeneo-cloudflare-connector.russellkmoore.workers.dev/category/${categoryId}`);
+						if (response.ok) {
+							const categoryData = await response.json();
+							displayCategoryData(categoryData);
+						} else {
+							$('#category-info').text('Category not found');
+						}
+					} catch (error) {
+						$('#category-info').text('Failed to fetch category data');
+					}
+				}
+
+				function displayCategoryData(categoryData) {
+					const categoryInfoDiv = $('#category-info');
+					categoryInfoDiv.html(`
+				  <p><strong>Category ID:</strong> ${categoryData.code}</p>
+				  <p><strong>Labels:</strong> ${JSON.stringify(categoryData.labels, null, 2)}</p>
+				  <p><strong>Parent:</strong> ${categoryData.parent || 'None'}</p>
+				  <p><strong>Child Product IDs:</strong></p>
+				  <ul>
+					${categoryData.childProductIds.map(productId => `<li><a href="/product.html?product-id=${productId}">${productId}</a></li>`).join('')}
+				  </ul>
+				`);
+				}
+
+				$('#go-back').on('click', goBack);
+
+				const urlParams = new URLSearchParams(window.location.search);
+				const categoryId = urlParams.get('category-id');
+				if (categoryId) {
+					fetchCategoryData(categoryId);
+				} else {
+					$('#category-info').text('No category ID provided');
+				}
+
+				async function fetchCategoryNavigation() {
+					try {
+						const response = await fetch('https://akeneo-cloudflare-connector.russellkmoore.workers.dev/catalog'); // Replace with your worker URL
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						const categoryTree = await response.json();
+						console.log('Fetched categoryTree:', categoryTree); // Log the fetched category tree
+						if (Array.isArray(categoryTree)) {
+							displayCategoryMenu(categoryTree);
+							buildHorizontalNav();
+						} else {
+							console.error('Expected an array but got:', categoryTree);
+						}
+					} catch (error) {
+						console.error('Failed to fetch category navigation:', error);
+					}
+				}
+
+				function displayCategoryMenu(categories, parentElement = $('#menu-list')) {
+					categories.forEach(category => {
+						const li = $('<li></li>');
+						const a = $('<a></a>').attr('href', `/category.html?category-id=${category.code}`).text(category.labels.en_US || category.code);
+						li.append(a);
+
+						if (category.categories && category.categories.length > 0) {
+							const ul = $('<ul class="hideElement"></ul>');
+							displayCategoryMenu(category.categories, ul);
+							li.append(ul);
+						}
+
+						parentElement.append(li);
+					});
+				}
+
+				function buildHorizontalNav() {
+					// Add plus mark to li that have a sub menu
+					$('li:has("ul") > a').append('<span class="plusMark">+</span>');
+
+					// Sub menu interaction
+					$('li:has("ul")').on('mouseover keyup click mouseleave', function(e) {
+						if (e.keyCode === 9 || e.type === 'mouseover') {
+							$(this).children('ul').removeClass('js-hideElement').addClass('js-showElement');
+						}
+
+						if (e.type === 'mouseleave') {
+							$(this).children('ul').removeClass('js-showElement').addClass('js-hideElement');
+						}
+
+						if (e.type === 'click') {
+							if ($(this).children('a').hasClass('js-openSubMenu')) {
+								$(this).children('a').removeClass('js-openSubMenu');
+								$(this).children('ul').removeClass('js-showElement').addClass('js-hideElement');
+							} else {
+								$(this).children('a').addClass('js-openSubMenu');
+								$(this).children('ul').removeClass('js-hideElement').addClass('js-showElement');
+							}
+							return true;
+						}
+					});
+
+					// Tabbing through Levels of sub menu
+					$('li > ul > li:last-child > a').on('keydown', function(e) {
+						if ((e.keyCode == 9) && $(this).parent('li').children('ul').length == 0) {
+							$(this).parent('li').parent('ul').removeClass('js-showElement').addClass('js-hideElement');
+
+							if ($(this).parent('li').parent('ul').parent('li').parent('ul').parent('li').children('ul').length > 0 && $(this).parent('li').parent('ul').parent('li').is(':last-child')) {
+								$(this).parent('li').parent('ul').parent('li').parent('ul').removeClass('js-showElement').addClass('js-hideElement');
+							}
+						}
+					});
+				}
+
+				fetchCategoryNavigation();
+
+				$('#toggleMenu').on('click', function() {
+					if ($(this).hasClass('js-open')) {
+						$('#nav > ul > li:not(#toggleMenu)').removeClass('js-showElement');
+						$(this).removeClass('js-open');
+					} else {
+						$('#nav > ul > li:not(#toggleMenu)').addClass('js-showElement');
+						$(this).addClass('js-open');
+					}
+					return false;
+				});
+			});
+		</script>
+	</main>
 </body>
 
 </html>

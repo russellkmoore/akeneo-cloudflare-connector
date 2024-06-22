@@ -101,7 +101,7 @@ export async function handleRefresh(env) {
 		}
 
 		let allCategories = [];
-		let nextPageUrl = `http://${akeneoInstance.hostname}/api/rest/v1/categories?limit=100`;
+		let nextPageUrl = `http://${akeneoInstance.hostname}/api/rest/v1/categories?search={"parent":[{"operator":"=","value":"master"}]}&limit=100`;
 
 		while (nextPageUrl) {
 			const response = await fetch(nextPageUrl, {
@@ -146,6 +146,9 @@ export async function handleRefresh(env) {
 		});
 
 		categories.forEach(category => {
+			if (category.parent == 'master') {
+				category.parent = null;
+			}
 			if (category.parent) {
 				categoryMap[category.parent].categories.push(categoryMap[category.code]);
 			} else {
