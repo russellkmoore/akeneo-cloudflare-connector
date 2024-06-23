@@ -147,7 +147,8 @@ The ones we need to set up are:
 + CF_CPRODUCTKVID -- the id of the Product KV you saved earlier
 
 In this screenshot, you can see all of these set up with their correct naming:
-![Cloudflare Secrets and KVs](/screenshots/secretsnandKVs.png?raw=true "cloudflare secrets and KVs")
+![Cloudflare Secrets and KVs](/screenshots/screenshots
+/secretsandKVs.png?raw=true "cloudflare secrets and KVs")
 
 
 Your code should all be set up.
